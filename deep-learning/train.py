@@ -62,7 +62,7 @@ def preprocess():
     y = t_dataset[:, -1]
     # Splitting the dataset into the Training set and Test set
     from sklearn.model_selection import train_test_split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.05, shuffle = False)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.05)
     
     #   scale the dataset
     from sklearn.preprocessing import StandardScaler
@@ -98,7 +98,7 @@ def train():
     ann.compile(optimizer = 'adam', loss = 'mean_squared_error')
     
     #   training the ANN on the training set
-    ann.fit(X_train, y_train, batch_size = 2, epochs = 10)
+    ann.fit(X_train, y_train, batch_size = 2, epochs = 32)
     
     #   make predictions based on trained model
     y_pred = ann.predict(X_test)

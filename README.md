@@ -1,9 +1,11 @@
-# Covid19
+# covid19_forecast
 
 A Neural Net predicts how many people will be death for the day after looking at some parameters which are stated below.
 
-### train.py
-	fetch, preprocess and train the model before making predictions.
+### Deep Learning
+
+#### train.py
+	fetch and preprocess the dataset, afterwards train the model before making predictions.
 ##### /for collecting dataset	:	"https://api.covid19api.com/total/dayone/country/turkey"
 ##### /for preprocessing : from sklearn.preprocessing import StandardScaler
 ##### /for training : import tensorflow
@@ -13,7 +15,7 @@ A Neural Net predicts how many people will be death for the day after looking at
   * label : # of death people for each day
   ###### Training and Test dataset:
   * training data (the first 99.5% of forecast is training data)
-  * test data (the last 0.05% of forecast is test data, shuffle is disabled)
+  * test data (the last 0.05% of forecast is test data)
   ###### Model architecture is:
   * 1 input layer (# of unit=8, activation='relu')
   * 2 hidden layer (# of unit=8, activation='relu')
@@ -23,12 +25,12 @@ A Neural Net predicts how many people will be death for the day after looking at
   * loss = 'mean_squared_error' (Since this is a regression problem, the model is need a mean squared error for loss function.)
   ###### Model fitting:
   * batch_size = 2
-  * epoch = 10
+  * epoch = 32
   ###### Model saving:
   * depends on user action, if user decides to save model upon comparing prediction and real test data gap.
   * scalers of training and test is saved for future inverse_transform.
 
-### predict.py
+#### predict.py
 	gets 3 parameter(total active case, total confirmed case, total recored case) and predict # of death for the day.
   - [Prediction / Actual] Numbers of previously trained model for the last 5 days of covid pandemic:
   ###### 16.29431 / 21
@@ -40,4 +42,4 @@ A Neural Net predicts how many people will be death for the day after looking at
   ###### >> Enter # of active case for today: 21451
   ###### >> Enter # of confirmed case for today: 173036
   ###### >> Enter # of recovered case for today: 146839
-  ###### >> 17.006247
+  ###### >> 15.094729
