@@ -8,7 +8,7 @@ Created on Tue Jun 16 22:25:18 2020
 import requests
 import numpy as np
 import json
-from sklearn.externals.joblib import dump
+from joblib import dump
 
 def fetch():
     
@@ -17,11 +17,11 @@ def fetch():
     
     #   send get request
     raw = requests.get(url)
+    
     #   format json
     raw_json = raw.json()
     
     global dataset
-    
         
     #   extract features from the dataset
     for i in range(len(raw_json)):
@@ -54,35 +54,68 @@ def preprocess():
         
     #   fetch and form the dataset
     t_dataset = fetch()
+    
+    #   due to API corruption, I need to make a hand-fix at day:105 and day:106
+    # t_dataset[105] = [22398, 191657, 164234, 24]
+    # t_dataset[106,3] = 21
+    
     #   split training and test data
     X = t_dataset[:, :-1].astype(float)
     y = t_dataset[:, -1].astype(float)
     
-    y = y.reshape(-1, 1)
+    # Splitting the dataset into the Training set and Test set
+    from sklearn.model_selection import train_test_split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.05)
+    
+    y_train = y_train.reshape(-1, 1)
+    y_test = y_test.reshape(-1, 1)
+    
     #   scale the dataset
     from sklearn.preprocessing import StandardScaler
-    scalerX = StandardScaler().fit(X)
-    scalery = StandardScaler().fit(y)
-    X = scalerX.transform(X)
-    y = scalery.transform(y)
+    scalerX = StandardScaler().fit(X_train)
+    scalery = StandardScaler().fit(y_train)
     
-    return X, y, scalerX, scalery
+    #   scale train data
+    X_train = scalerX.transform(X_train).astype(float)
+    y_train = scalery.transform(y_train).astype(float)
+    
+    #   scale test data
+    X_test = scalerX.transform(X_test).astype(float)
+    y_test = scalery.transform(y_test).astype(float)
+    
+    return X_train, X_test, y_train, y_test, scalerX, scalery
 
 def train():
-    X, y, scalerX, scalery = preprocess()
+    X_train, X_test, y_train, y_test, scalerX, scalery = preprocess()
     
     #   form a kernel and later, fit the training data
     from sklearn.svm import SVR
-    svr_rbf = SVR(kernel='rbf', C=1)
-    svr_rbf.fit(X, y.reshape(-1))
-    #   calculate accuracy in percentage
-    accuracy = scalery.inverse_transform(svr_rbf.predict(X)) - scalery.inverse_transform(y.ravel())
-    accuracy = abs(accuracy).mean()
-    #   print the predictions of the training data
-    print("Accuracy: {}".format(accuracy))
+    
+    #   5-fold cross-validation
+    from sklearn.model_selection import cross_val_score
+    
+    #   value of C variable
+    var_c = 0.01
+    for i in range (8):
+        svr_rbf = SVR(kernel='rbf', C=var_c, gamma='auto')
+        scores = cross_val_score(svr_rbf, X_train, y_train.reshape(-1), cv=5)
+        print("[{3}]Accuracy: {0:.2f} (+/- {1:.2f}) with C={2}".format(scores.mean(), scores.std() * 2, var_c, i))
+        var_c = var_c*10
+    
+    coeff = input("Enter a index number to select a C value: ")
+    var_c = 0.01*(10**int(coeff))
+    
+    #   fit SVR model
+    svr_rbf = SVR(kernel='rbf', C=var_c, gamma='auto')
+    svr_rbf.fit(X_train, y_train.reshape(-1))
+    
+    #   predictions on the test data
+    pred = scalery.inverse_transform(svr_rbf.predict(X_test)) - scalery.inverse_transform(y_test.reshape(-1))
+    print("Accuracy on test data: {0:.2f} (+/- {1:.2f})".format(abs(pred.mean()), pred.std()))
+    
     #   save the trained model
-    check = input("Do you want to save the model? [YES/NO]: ")
-    if(check.upper() == "YES"):
+    check = input("Do you want to save the model? [y/n]: ")
+    if(check.upper() == "Y"):
         dump(svr_rbf, "covid19.svr", compress=True)
         dump(scalerX, "scaler_x.bin", compress=True)
         dump(scalery, "scaler_y.bin", compress=True)

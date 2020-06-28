@@ -10,13 +10,11 @@
   * all data is consumed by SVR model for fitting.
   ###### Model compilation:
   * kernel = 'rbf'
-  * C = 1
+  * C = 8-repeat/5-fold cross-validation and available for user decision. init=.01 up-to 10^6
   ###### Model fitness:
-  * As trying different models, a fitness parameter was required. So, accuracy variable is used.
-  * accuracy = abs(prediction_values - real_values).mean()
-  * The bigger value of accuracy, the less fit the model is.
+  * fitness parameter is cross_val_score.mean() with cross_val_score.std() provided.
   ###### Model saving:
-  * depends on user action, if user decides to save model upon comparing prediction and real test data gap.
+  * depends on user action, if user decides to save model upon fitness level of the current model.
   * scalers of training and test is saved for future inverse_transform.
   
   #### predict.py

@@ -8,7 +8,7 @@ Created on Mon Jun  8 20:57:10 2020
 import requests
 import numpy as np
 import json
-from sklearn.externals.joblib import dump
+from joblib import dump
 
 def fetch():
     
@@ -17,11 +17,11 @@ def fetch():
     
     #   send get request
     raw = requests.get(url)
+    
     #   format json
     raw_json = raw.json()
     
     global dataset
-    
         
     #   extract features from the dataset
     for i in range(len(raw_json)):
@@ -51,15 +51,18 @@ def fetch():
 def preprocess():
     
     global t_dataset
-#    global min_max_scaler
-        
-#    #   scaler for [0,1] range scaling
-#    min_max_scaler = preprocessing.MinMaxScaler()
+    
     #   fetch and form the dataset
     t_dataset = fetch()
+    
+    #   due to API corruption, I need to make a hand-fix at day:105 and day:106
+    # t_dataset[105] = [22398, 191657, 164234, 24]
+    # t_dataset[106,3] = 21
+    
     #   split training and test data
-    X = t_dataset[:, :-1]
-    y = t_dataset[:, -1]
+    X = t_dataset[:, :-1].astype(float)
+    y = t_dataset[:, -1].astype(float)
+    
     # Splitting the dataset into the Training set and Test set
     from sklearn.model_selection import train_test_split
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.05)
@@ -85,11 +88,10 @@ def train():
     
     #   initializing the ANN
     ann = tf.keras.models.Sequential()
-
+    
     #   adding the input layer and the first hidden layer
+    ann.add(tf.keras.layers.Dense(units=8, activation='relu', input_shape=(3,)))
     ann.add(tf.keras.layers.Dense(units=8, activation='relu'))
-    ann.add(tf.keras.layers.Dense(units=8, activation='relu'))
-#    ann.add(tf.keras.layers.Dense(units=32, activation='relu'))
     
     #   adding the output layer
     ann.add(tf.keras.layers.Dense(units=1))
@@ -103,17 +105,18 @@ def train():
     #   make predictions based on trained model
     y_pred = ann.predict(X_test)
     
+    #   calculate margin of error
+    pred = y_pred - y_test
+    print("Margin of error for test data (scaled to range 0-1): {0:.5f}"
+          .format(abs(pred.mean())))
+    
     #   inverse-transformation
     y_pred = scalery.inverse_transform(y_pred)
-    y_test = scalery.inverse_transform(y_test)
-    print("Predictions on test set:")
-    print(y_pred)
-    print("Actual test set:")
-    print(y_test)
-    
+    y_test = scalery.inverse_transform(y_test.reshape(-1))  
+
     #   save the trained model
-    check = input("Do you want to save the model? [YES/NO]: ")
-    if(check.upper() == "YES"):
+    check = input("Do you want to save the model? [y/n]: ")
+    if(check.upper() == "Y"):
         ann.save("covid19.h5")
         dump(scalerX, 'scaler_x.bin', compress=True)
         dump(scalery, 'scaler_y.bin', compress=True)

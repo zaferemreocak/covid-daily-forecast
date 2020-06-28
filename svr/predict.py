@@ -5,7 +5,7 @@ Created on Wed Jun 17 01:47:08 2020
 @author: Emre
 """
 
-from sklearn.externals.joblib import load
+from joblib import load
 
 def predict():
     
